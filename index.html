@@ -258,8 +258,15 @@ $('logout').onclick = () => sb.auth.signOut()
 
 sb.auth.onAuthStateChange(async (_e, session) => {
   if (session) {
-    const { data: admin } = await sb.rpc('is_admin')
-    if (!admin) { $('li-err').textContent = 'Dieser Account ist nicht freigeschaltet.'; await sb.auth.signOut(); return }
+     const { data: admin, error: adminErr } = await sb.rpc('is_admin')
+    if (adminErr) {
+      $('li-err').textContent = 'Verbindung zur Datenbank fehlgeschlagen: ' + adminErr.message
+      await sb.auth.signOut(); return
+    }
+    if (!admin) {
+      $('li-err').textContent = 'Account ist angemeldet, aber nicht in admins freigeschaltet.'
+      await sb.auth.signOut(); return
+    }
     $('login').classList.add('hidden'); $('app').classList.remove('hidden')
     $('who').textContent = session.user.email
     await boot()
