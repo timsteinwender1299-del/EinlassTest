@@ -239,6 +239,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 /* =============================== */
 
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+window.sb = sb
 
 const PREISE = [{v:'25',l:'25 €'},{v:'30',l:'30 €'},{v:'35',l:'35 €'},{v:'bar',l:'Barzahlung'}]
 const PRONOUNS = ['He/Him','She/Her','They/Them','Neopronouns','other pronouns','no pronouns']
