@@ -254,7 +254,10 @@ $('li-go').onclick = async () => {
   if (error) $('li-err').textContent = 'Anmeldung fehlgeschlagen: ' + error.message
 }
 $('li-pass').onkeydown = e => { if (e.key === 'Enter') $('li-go').click() }
-$('logout').onclick = () => sb.auth.signOut()
+$('logout').onclick = async () => {
+  if (liveChannel) { await sb.removeChannel(liveChannel); liveChannel = null }
+  await sb.auth.signOut()
+}
 
 sb.auth.onAuthStateChange(async (_e, session) => {
   if (session) {
@@ -276,13 +279,17 @@ sb.auth.onAuthStateChange(async (_e, session) => {
 })
 
 /* ---------- Laden ---------- */
+let liveChannel = null
+
 async function boot(){
   await loadEvent()
   await loadAll()
-  sb.channel('live')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'applicants' }, loadAll)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, loadAll)
-    .subscribe()
+  if (!liveChannel) {
+    liveChannel = sb.channel('live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applicants' }, loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, loadAll)
+      .subscribe()
+  }
   processJobs()
 }
 
