@@ -352,8 +352,14 @@ async function processJobs(){
 $('retry').onclick = () => { processJobs() }
 
 async function renderPng(applicantId){
-  const c = rows.find(r => r.id === applicantId)
-  if (!c?.ticket) return null
+  let c = rows.find(r => r.id === applicantId)
+  if (!c?.ticket) {
+    // Ticket frisch aus der Datenbank holen — die Liste kann noch veraltet sein
+    const { data } = await sb.from('applicants')
+      .select('*, tickets(*)').eq('id', applicantId).single()
+    if (!data?.tickets?.length) { console.warn('Kein Ticket für', applicantId); return null }
+    c = { ...data, ticket: data.tickets[0] }
+  }
   const slot = $('render-slot')
   slot.innerHTML = ticketHtml(c)
   await document.fonts.ready
