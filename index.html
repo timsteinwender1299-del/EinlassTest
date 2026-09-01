@@ -306,7 +306,11 @@ async function loadAll(){
     .select('*, tickets(*), mail_status(payment_status, ticket_status)')
     .order('created_at')
   if (error) { $('dbstate').textContent = 'Fehler: ' + error.message; return }
-  rows = (data ?? []).map(r => ({ ...r, ticket: r.tickets?.[0] ?? null, status: r.mail_status?.[0] ?? {} }))
+  rows = (data ?? []).map(r => ({
+  ...r,
+  ticket: Array.isArray(r.tickets) ? (r.tickets[0] ?? null) : (r.tickets ?? null),
+  status: Array.isArray(r.mail_status) ? (r.mail_status[0] ?? {}) : (r.mail_status ?? {})
+  }))
   const { data: p } = await sb.rpc('list_pending_jobs')
   jobs = p ?? []
   $('dbstate').textContent = `verbunden · ${rows.length} Datensätze`
@@ -354,15 +358,13 @@ $('retry').onclick = () => { processJobs() }
 
 async function renderPng(applicantId){
   let c = rows.find(r => r.id === applicantId)
-
-  // Ticket bis zu fünfmal nachladen — direkt nach dem Anlegen ist es
-  // manchmal einen Moment lang noch nicht über die API sichtbar
-  for (let i = 0; !c?.ticket && i < 5; i++) {
+  if (!c?.ticket) {
     const { data, error } = await sb.from('applicants')
       .select('*, tickets(*)').eq('id', applicantId).maybeSingle()
     if (error) console.error('Ticketabfrage:', error)
-    if (data?.tickets?.length) { c = { ...data, ticket: data.tickets[0] }; break }
-    await new Promise(r => setTimeout(r, 400))
+    const t = Array.isArray(data?.tickets) ? data.tickets[0] : data?.tickets
+    if (!t) { console.warn('Kein Ticket für', applicantId); return null }
+    c = { ...data, ticket: t }
   }
   if (!c?.ticket) { console.warn('Kein Ticket für', applicantId); return null }
   const slot = $('render-slot')
