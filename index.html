@@ -354,13 +354,17 @@ $('retry').onclick = () => { processJobs() }
 
 async function renderPng(applicantId){
   let c = rows.find(r => r.id === applicantId)
-  if (!c?.ticket) {
-    // Ticket frisch aus der Datenbank holen — die Liste kann noch veraltet sein
-    const { data } = await sb.from('applicants')
-      .select('*, tickets(*)').eq('id', applicantId).single()
-    if (!data?.tickets?.length) { console.warn('Kein Ticket für', applicantId); return null }
-    c = { ...data, ticket: data.tickets[0] }
+
+  // Ticket bis zu fünfmal nachladen — direkt nach dem Anlegen ist es
+  // manchmal einen Moment lang noch nicht über die API sichtbar
+  for (let i = 0; !c?.ticket && i < 5; i++) {
+    const { data, error } = await sb.from('applicants')
+      .select('*, tickets(*)').eq('id', applicantId).maybeSingle()
+    if (error) console.error('Ticketabfrage:', error)
+    if (data?.tickets?.length) { c = { ...data, ticket: data.tickets[0] }; break }
+    await new Promise(r => setTimeout(r, 400))
   }
+  if (!c?.ticket) { console.warn('Kein Ticket für', applicantId); return null }
   const slot = $('render-slot')
   slot.innerHTML = ticketHtml(c)
   await document.fonts.ready
