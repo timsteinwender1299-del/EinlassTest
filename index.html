@@ -375,6 +375,8 @@ async function renderPng(applicantId){
   slot.innerHTML = ''
   return png
 }
+ window.renderPng = renderPng
+ window.rows = () => rows 
 
 /* ---------- Ticket ---------- */
 const esc = s => String(s ?? '').replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))
